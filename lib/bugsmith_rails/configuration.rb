@@ -12,6 +12,15 @@ module BugsmithRails
                   :github_repository,
                   :base_branch,
                   :github_reports_path,
+                  :skill_text,
+                  :skill_path,
+                  :context_files,
+                  :max_context_files,
+                  :max_context_file_bytes,
+                  :max_prompt_context_chars,
+                  :include_backtrace_file_snippets,
+                  :max_backtrace_files,
+                  :backtrace_context_radius,
                   :create_pull_request,
                   :async,
                   :tracked_exceptions,
@@ -36,6 +45,16 @@ module BugsmithRails
       @github_repository = ENV["GITHUB_REPOSITORY"]
       @base_branch = ENV.fetch("BUGSMITH_BASE_BRANCH", "main")
       @github_reports_path = ENV.fetch("BUGSMITH_REPORTS_PATH", ".bugsmith/reports")
+      @repository_path = defined?(Rails) ? Rails.root.to_s : Dir.pwd
+      @skill_text = ""
+      @skill_path = ENV["BUGSMITH_SKILL_PATH"]
+      @context_files = default_context_files
+      @max_context_files = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILES", "30").to_i
+      @max_context_file_bytes = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILE_BYTES", "50000").to_i
+      @max_prompt_context_chars = ENV.fetch("BUGSMITH_MAX_PROMPT_CONTEXT_CHARS", "20000").to_i
+      @include_backtrace_file_snippets = true
+      @max_backtrace_files = ENV.fetch("BUGSMITH_MAX_BACKTRACE_FILES", "5").to_i
+      @backtrace_context_radius = ENV.fetch("BUGSMITH_BACKTRACE_CONTEXT_RADIUS", "20").to_i
       @create_pull_request = true
       @async = true
       @tracked_exceptions = []
@@ -108,12 +127,14 @@ module BugsmithRails
       :github_api
     end
 
-    # Compatibility shims; local git mode was removed.
+    # Compatibility shim; kept for context file discovery.
     def repository_path
-      defined?(Rails) ? Rails.root.to_s : Dir.pwd
+      @repository_path
     end
 
-    def repository_path=(_value); end
+    def repository_path=(value)
+      @repository_path = value.to_s
+    end
 
     def require_clean_worktree
       false
@@ -135,6 +156,19 @@ module BugsmithRails
       exceptions.flatten.compact.map do |entry|
         entry.is_a?(Class) ? entry.name : entry.to_s
       end.uniq
+    end
+
+    def default_context_files
+      [
+        "README.md",
+        "db/schema.rb",
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".agent/workflows",
+        ".claude-on-rails/prompts",
+        ".github/copilot-instructions.md",
+        ".github/instructions"
+      ]
     end
   end
 end

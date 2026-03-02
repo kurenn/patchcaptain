@@ -9,4 +9,12 @@ class ConfigurationTest < Minitest::Test
     config.flow_mode = :local
     assert_equal :github_api, config.flow_mode
   end
+
+  def test_default_context_files
+    config = BugsmithRails::Configuration.new
+    assert_includes config.context_files, "README.md"
+    assert_includes config.context_files, "AGENTS.md"
+    assert_includes config.context_files, ".agent/workflows"
+    assert_includes config.context_files, ".github/instructions"
+  end
 end

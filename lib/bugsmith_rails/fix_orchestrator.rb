@@ -7,7 +7,8 @@ module BugsmithRails
 
     def call
       validate_setup!
-      prompt = PromptBuilder.new(@payload)
+      context_pack = ContextPackBuilder.new(@payload, configuration: @configuration).build
+      prompt = PromptBuilder.new(@payload, context_pack: context_pack)
       raw_response = provider_client.generate_fix(
         system_prompt: prompt.to_system_prompt,
         user_prompt: prompt.to_user_prompt
@@ -23,11 +24,14 @@ module BugsmithRails
     def run_github_api_flow(plan, raw_response)
       return unless @configuration.create_pull_request
 
-      branch = github_client.create_branch(
+      branch_info = github_client.create_branch(
         base: @configuration.base_branch,
         requested_branch: plan[:branch_name]
       )
-      report_path, report_content = remote_report_file(raw_response, plan[:diff])
+      branch = branch_info.fetch(:branch)
+      base_branch = branch_info.fetch(:base_branch)
+      applied_changes = apply_file_changes(branch, plan[:file_changes], plan[:commit_message])
+      report_path, report_content = remote_report_file(raw_response, plan[:diff], plan[:file_changes])
       github_client.upsert_file(
         branch: branch,
         path: report_path,
@@ -40,6 +44,7 @@ module BugsmithRails
       pr_body << "- Exception: `#{@payload.dig(:exception, :class)}`\n"
       pr_body << "- Message: `#{@payload.dig(:exception, :message).to_s.gsub('`', "'")}`\n"
       pr_body << "- Report file: `#{report_path}`\n"
+      pr_body << "- Applied file changes: #{applied_changes}\n"
       pr_body << "- Proposed diff present: #{plan[:diff].present? ? 'yes' : 'no'}\n"
       if plan[:diff].present?
         pr_body << "\n```diff\n#{plan[:diff][0, 6000]}\n```\n"
@@ -49,7 +54,7 @@ module BugsmithRails
         title: plan[:title],
         body: pr_body,
         head: branch,
-        base: @configuration.base_branch
+        base: base_branch
       )
       @configuration.logger.info("[BugsmithRails] Opened PR via GitHub API: #{pr_url}")
     end
@@ -94,9 +99,13 @@ module BugsmithRails
       end
     end
 
-    def remote_report_file(raw_response, diff)
+    def remote_report_file(raw_response, diff, file_changes)
       timestamp = Time.now.utc.strftime("%Y%m%d%H%M%S")
       path = File.join(@configuration.github_reports_path, "#{timestamp}.md")
+      file_change_summary = Array(file_changes).map do |change|
+        "- #{change[:action]} #{change[:path]}"
+      end.join("\n")
+      file_change_summary = "- none" if file_change_summary.empty?
       content = <<~REPORT
         # Bugsmith Exception Report
 
@@ -119,8 +128,65 @@ module BugsmithRails
         ```diff
         #{diff.to_s}
         ```
+
+        ## Parsed File Changes
+        #{file_change_summary}
       REPORT
       [path, content]
+    end
+
+    def apply_file_changes(branch, file_changes, commit_message)
+      valid_changes = sanitize_file_changes(file_changes)
+      valid_changes.each do |change|
+        path = change.fetch(:path)
+        action = change.fetch(:action)
+        message = "#{commit_message} (#{action} #{path})"
+
+        case action
+        when :delete
+          github_client.delete_file(branch: branch, path: path, commit_message: message)
+        when :create, :update
+          github_client.upsert_file(
+            branch: branch,
+            path: path,
+            content: change.fetch(:content),
+            commit_message: message
+          )
+        end
+      end
+      valid_changes.length
+    end
+
+    def sanitize_file_changes(file_changes)
+      Array(file_changes).filter_map do |change|
+        next unless change.is_a?(Hash)
+
+        path = change[:path].to_s.tr("\\", "/").strip
+        action = change[:action].to_sym
+        content = change[:content].to_s
+        next if path.empty?
+        next unless %i[create update delete].include?(action)
+        next unless safe_repo_relative_path?(path)
+
+        {
+          path: path,
+          action: action,
+          content: action == :delete ? "" : content
+        }
+      rescue
+        nil
+      end
+    end
+
+    def safe_repo_relative_path?(path)
+      path_name = Pathname(path)
+      return false if path_name.absolute?
+
+      clean = path_name.cleanpath.to_s
+      return false if clean.start_with?("../") || clean == ".."
+      return false if clean.start_with?(".git/")
+
+      true
     end
   end
 end

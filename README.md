@@ -49,6 +49,14 @@ BugsmithRails.configure do |config|
   config.tracked_exceptions = []
   config.ignored_exceptions = ["ActionController::RoutingError", "ActiveRecord::RecordNotFound"]
   config.max_backtrace_lines = nil # full backtrace
+
+  # Optional context/skill pack to improve fix quality
+  config.skill_path = Rails.root.join(".bugsmith/skills/rails_fix.md").to_s
+  # Defaults include:
+  # README.md, db/schema.rb, CLAUDE.md, AGENTS.md,
+  # .agent/workflows, .claude-on-rails/prompts,
+  # .github/copilot-instructions.md, .github/instructions
+  # config.context_files = ["README.md", "db/schema.rb"]
 end
 ```
 
@@ -57,9 +65,10 @@ end
 When an exception is raised:
 1. Bugsmith captures error details and backtrace.
 2. Sensitive data is redacted.
-3. AI generates a patch proposal.
-4. Bugsmith creates branch + commit + PR directly in GitHub (no local git).
-5. The PR includes a full exception report and proposed diff.
+3. Bugsmith builds prompt context (skill text + selected project files + backtrace snippets).
+4. AI returns concrete `file_changes` (+ optional diff).
+5. Bugsmith writes those file changes directly to a GitHub branch via API and opens the PR.
+6. The PR also includes a full exception report.
 
 ## 5. Optional: manual report
 
@@ -75,3 +84,4 @@ end
 
 - Review AI-generated PRs before merging.
 - Keep keys in secrets manager or Rails encrypted credentials.
+- Required token permissions: `Contents (read/write)` and `Pull requests (read/write)`.

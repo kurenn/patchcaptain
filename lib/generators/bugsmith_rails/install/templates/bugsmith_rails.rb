@@ -28,4 +28,19 @@ BugsmithRails.configure do |config|
   config.async = true
   config.max_backtrace_lines = nil # nil means full backtrace
   config.github_reports_path = ".bugsmith/reports"
+
+  # Optional "skill" and context to improve AI fixes.
+  # config.skill_path = Rails.root.join(".bugsmith/skills/rails_fix.md").to_s
+  # config.skill_text = "Team coding rules..."
+  # Default context_files includes:
+  # README.md, db/schema.rb, CLAUDE.md, AGENTS.md,
+  # .agent/workflows, .claude-on-rails/prompts,
+  # .github/copilot-instructions.md, .github/instructions
+  # config.context_files = ["README.md", "db/schema.rb", ".github/instructions"]
+  # config.max_context_files = 30
+  # config.max_context_file_bytes = 50_000
+  # config.max_prompt_context_chars = 20_000
+  # config.include_backtrace_file_snippets = true
+  # config.max_backtrace_files = 5
+  # config.backtrace_context_radius = 20
 end

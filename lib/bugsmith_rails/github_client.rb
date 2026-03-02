@@ -14,12 +14,13 @@ module BugsmithRails
 
     def create_branch(base:, requested_branch:)
       branch = sanitize_branch_name(requested_branch)
-      sha = @client.branch(@repository, base).commit.sha
+      resolved_base = resolve_base_branch(base)
+      sha = @client.branch(@repository, resolved_base).commit.sha
 
       5.times do
         begin
           @client.create_ref(@repository, "heads/#{branch}", sha)
-          return branch
+          return { branch: branch, base_branch: resolved_base }
         rescue Octokit::UnprocessableEntity => e
           raise unless branch_exists_error?(e)
 
@@ -37,7 +38,34 @@ module BugsmithRails
       @client.create_contents(@repository, path, commit_message, content, branch: branch)
     end
 
+    def delete_file(branch:, path:, commit_message:)
+      existing = @client.contents(@repository, path: path, ref: branch)
+      @client.delete_contents(@repository, path, commit_message, existing.sha, branch: branch)
+    rescue Octokit::NotFound
+      nil
+    end
+
     private
+
+    def resolve_base_branch(base)
+      @client.branch(@repository, base)
+      base
+    rescue Octokit::NotFound
+      repo = begin
+        @client.repository(@repository)
+      rescue Octokit::Unauthorized, Octokit::Forbidden
+        raise BugsmithRails::Error, "GitHub token does not have access to #{@repository.inspect}"
+      rescue Octokit::NotFound => e
+        raise BugsmithRails::Error, "Repository #{@repository.inspect} not found or token has no access (#{e.message})"
+      end
+
+      default_branch = repo.default_branch.to_s
+      return default_branch if default_branch.present?
+
+      raise BugsmithRails::Error, "Could not resolve a base branch for #{@repository.inspect}"
+    rescue Octokit::Unauthorized, Octokit::Forbidden
+      raise BugsmithRails::Error, "GitHub token does not have access to #{@repository.inspect}"
+    end
 
     def sanitize_branch_name(name)
       raw = name.to_s.downcase.gsub(/[^a-z0-9\/_-]/, "-").gsub(%r{/+}, "/").gsub(/-{2,}/, "-")
