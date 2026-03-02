@@ -36,29 +36,96 @@ Edit `config/initializers/bugsmith_rails.rb`:
 
 ```ruby
 BugsmithRails.configure do |config|
-  config.provider = :codex # or :anthropic
+  # Core
+  config.enabled = true
+  config.provider = :codex # :codex or :anthropic
 
+  # Provider credentials/endpoints
   config.codex_api_key = ENV["CODEX_API_KEY"]
-  config.anthropic_api_key = ENV["ANTHROPIC_API_KEY"]
+  config.codex_api_base = ENV.fetch("CODEX_API_BASE", "https://api.openai.com/v1")
+  config.codex_model = ENV.fetch("CODEX_MODEL", "gpt-5-codex")
 
+  config.anthropic_api_key = ENV["ANTHROPIC_API_KEY"] || ENV["NANTROPIC_API_KEY"]
+  config.anthropic_api_base = ENV["ANTHROPIC_API_BASE"] || ENV["NANTROPIC_API_BASE"] || "https://api.anthropic.com"
+  config.anthropic_model = ENV["ANTHROPIC_MODEL"] || ENV["NANTROPIC_MODEL"] || "claude-sonnet-4-5"
+
+  # GitHub
   config.github_token = ENV["GITHUB_TOKEN"]
   config.github_repository = ENV["GITHUB_REPOSITORY"] # "org/repo"
-  config.base_branch = "main"
+  config.base_branch = ENV.fetch("BUGSMITH_BASE_BRANCH", "main")
+  config.github_reports_path = ENV.fetch("BUGSMITH_REPORTS_PATH", ".bugsmith/reports")
+  config.create_pull_request = true
 
-  # Track all exceptions except ignored ones
+  # Exception filtering
+  # Empty tracked_exceptions => track all except ignored_exceptions
   config.tracked_exceptions = []
   config.ignored_exceptions = ["ActionController::RoutingError", "ActiveRecord::RecordNotFound"]
-  config.max_backtrace_lines = nil # full backtrace
+  # Alternative helper methods:
+  # config.track_exceptions(ArgumentError, MyCustomError)
+  # config.ignore_exceptions("ActionController::RoutingError")
 
-  # Optional context/skill pack to improve fix quality
-  config.skill_path = Rails.root.join(".bugsmith/skills/rails_fix.md").to_s
-  # Defaults include:
-  # README.md, db/schema.rb, CLAUDE.md, AGENTS.md,
-  # .agent/workflows, .claude-on-rails/prompts,
-  # .github/copilot-instructions.md, .github/instructions
-  # config.context_files = ["README.md", "db/schema.rb"]
+  # Payload/redaction
+  config.max_backtrace_lines = nil # nil => full backtrace
+  config.redacted_keys = %w[password token api_key authorization cookie secret session]
+  config.redacted_patterns = [
+    /Bearer\s+[A-Za-z0-9\-\._~\+\/]+=*/i,
+    /ghp_[A-Za-z0-9]{20,}/,
+    /sk-[A-Za-z0-9]{20,}/
+  ]
+
+  # Prompt context / skills
+  config.skill_text = ""
+  config.skill_path = ENV["BUGSMITH_SKILL_PATH"] # optional
+  config.context_files = [
+    "README.md",
+    "db/schema.rb",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".agent/workflows",
+    ".claude-on-rails/prompts",
+    ".github/copilot-instructions.md",
+    ".github/instructions"
+  ]
+  config.max_context_files = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILES", "30").to_i
+  config.max_context_file_bytes = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILE_BYTES", "50000").to_i
+  config.max_prompt_context_chars = ENV.fetch("BUGSMITH_MAX_PROMPT_CONTEXT_CHARS", "20000").to_i
+  config.include_backtrace_file_snippets = true
+  config.max_backtrace_files = ENV.fetch("BUGSMITH_MAX_BACKTRACE_FILES", "5").to_i
+  config.backtrace_context_radius = ENV.fetch("BUGSMITH_BACKTRACE_CONTEXT_RADIUS", "20").to_i
+
+  # Runtime behavior
+  config.async = true
+  config.commit_author_name = "Bugsmith Rails"
+  config.commit_author_email = "bugsmith-rails@users.noreply.github.com"
+  config.logger = Rails.logger
+
+  # Compatibility helpers (kept for older configs)
+  config.flow_mode = :github_api # fixed to :github_api
+  config.repository_path = Rails.root.to_s # used for context/fingerprint only
+  config.require_clean_worktree = false # no-op
 end
 ```
+
+### 3.1 Environment Variables
+
+- `CODEX_API_KEY`
+- `CODEX_API_BASE` (default: `https://api.openai.com/v1`)
+- `CODEX_MODEL` (default: `gpt-5-codex`)
+- `ANTHROPIC_API_KEY` (or legacy `NANTROPIC_API_KEY`)
+- `ANTHROPIC_API_BASE` (or legacy `NANTROPIC_API_BASE`)
+- `ANTHROPIC_MODEL` (or legacy `NANTROPIC_MODEL`)
+- `GITHUB_TOKEN`
+- `GITHUB_REPOSITORY`
+- `BUGSMITH_BASE_BRANCH` (default: `main`)
+- `BUGSMITH_REPORTS_PATH` (default: `.bugsmith/reports`)
+- `BUGSMITH_SKILL_PATH` (optional)
+- `BUGSMITH_MAX_CONTEXT_FILES` (default: `30`)
+- `BUGSMITH_MAX_CONTEXT_FILE_BYTES` (default: `50000`)
+- `BUGSMITH_MAX_PROMPT_CONTEXT_CHARS` (default: `20000`)
+- `BUGSMITH_MAX_BACKTRACE_FILES` (default: `5`)
+- `BUGSMITH_BACKTRACE_CONTEXT_RADIUS` (default: `20`)
+- `BUGSMITH_RELEASE_SHA` (optional deploy SHA override for dedupe)
+- `GITHUB_SHA` (fallback release SHA source)
 
 ## 4. How it works
 
