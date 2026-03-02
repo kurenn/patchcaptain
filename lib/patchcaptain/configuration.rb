@@ -12,6 +12,10 @@ module PatchCaptain
                   :github_repository,
                   :base_branch,
                   :github_reports_path,
+                  :pull_request_labels,
+                  :label_no_file_changes,
+                  :label_high_risk,
+                  :high_risk_file_change_threshold,
                   :skill_text,
                   :skill_path,
                   :context_files,
@@ -45,6 +49,10 @@ module PatchCaptain
       @github_repository = ENV["GITHUB_REPOSITORY"]
       @base_branch = ENV.fetch("PATCHCAPTAIN_BASE_BRANCH", "main")
       @github_reports_path = ENV.fetch("PATCHCAPTAIN_REPORTS_PATH", ".patchcaptain/reports")
+      @pull_request_labels = %w[patchcaptain needs-review]
+      @label_no_file_changes = "needs-manual-fix"
+      @label_high_risk = "high-risk"
+      @high_risk_file_change_threshold = ENV.fetch("PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD", "8").to_i
       @repository_path = defined?(Rails) ? Rails.root.to_s : Dir.pwd
       @skill_text = ""
       @skill_path = ENV["PATCHCAPTAIN_SKILL_PATH"]

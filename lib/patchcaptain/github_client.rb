@@ -9,7 +9,19 @@ module PatchCaptain
 
     def create_pull_request(title:, body:, head:, base:)
       response = @client.create_pull_request(@repository, base, head, title, body)
-      response.fetch(:html_url)
+      {
+        url: response.fetch(:html_url),
+        number: response.fetch(:number)
+      }
+    end
+
+    def add_labels_to_pull_request(number:, labels:)
+      normalized = Array(labels).map(&:to_s).map(&:strip).reject(&:empty?).uniq
+      return if normalized.empty?
+
+      @client.add_labels_to_an_issue(@repository, number, normalized)
+    rescue Octokit::UnprocessableEntity => e
+      raise PatchCaptain::Error, "Failed to apply PR labels #{normalized.inspect}: #{e.message}"
     end
 
     def find_open_pull_request_by_markers(release_sha:, fingerprint:)

@@ -54,6 +54,10 @@ PatchCaptain.configure do |config|
   config.github_repository = ENV["GITHUB_REPOSITORY"] # "org/repo"
   config.base_branch = ENV.fetch("PATCHCAPTAIN_BASE_BRANCH", "main")
   config.github_reports_path = ENV.fetch("PATCHCAPTAIN_REPORTS_PATH", ".patchcaptain/reports")
+  config.pull_request_labels = %w[patchcaptain needs-review]
+  config.label_no_file_changes = "needs-manual-fix"
+  config.label_high_risk = "high-risk"
+  config.high_risk_file_change_threshold = ENV.fetch("PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD", "8").to_i
   config.create_pull_request = true
 
   # Exception filtering
@@ -119,6 +123,7 @@ end
 -   `PATCHCAPTAIN_BASE_BRANCH` (default: `main`)
 -   `PATCHCAPTAIN_REPORTS_PATH` (default: `.patchcaptain/reports`)
 -   `PATCHCAPTAIN_SKILL_PATH` (optional)
+-   `PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD` (default: `8`)
 -   `PATCHCAPTAIN_MAX_CONTEXT_FILES` (default: `30`)
 -   `PATCHCAPTAIN_MAX_CONTEXT_FILE_BYTES` (default: `50000`)
 -   `PATCHCAPTAIN_MAX_PROMPT_CONTEXT_CHARS` (default: `20000`)
@@ -148,8 +153,13 @@ GitHub:
 -   `github_repository`: Target repository in `owner/repo` format.
 -   `base_branch`: Base branch for new fix PRs.
 -   `github_reports_path`: Path where exception reports are committed in PR branches.
+-   `pull_request_labels`: Base labels always added to created PRs.
+-   `label_no_file_changes`: Extra label when AI produced no applicable file changes.
+-   `label_high_risk`: Extra label when the number of changed files passes risk threshold.
+-   `high_risk_file_change_threshold`: File-change count that triggers `label_high_risk`.
 -   `create_pull_request`: If `false`, orchestration exits before AI/provider call.
     Hint: keep this `true` in staging/production, but set `false` for prompt/debug experiments to avoid creating test PRs.
+    Hint: if labels fail because they do not exist in your repo, PatchCaptain logs a warning and continues.
 
 Exception filtering:
 -   `tracked_exceptions`: Allow-list. Empty means “track all unless ignored.”

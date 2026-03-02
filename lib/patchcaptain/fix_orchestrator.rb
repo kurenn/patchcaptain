@@ -79,13 +79,20 @@ module PatchCaptain
       pr_body << "\n<!-- patchcaptain_release_sha: #{release_sha} -->\n"
       pr_body << "<!-- patchcaptain_fingerprint: #{fingerprint} -->\n"
 
-      pr_url = github_client.create_pull_request(
+      pr = github_client.create_pull_request(
         title: plan[:title],
         body: pr_body,
         head: branch,
         base: base_branch
       )
-      @configuration.logger.info("[PatchCaptain] Opened PR via GitHub API: #{pr_url}")
+      labels = resolved_pr_labels(applied_changes: applied_changes)
+      begin
+        github_client.add_labels_to_pull_request(number: pr.fetch(:number), labels: labels)
+      rescue => e
+        @configuration.logger.warn("[PatchCaptain] Could not apply labels #{labels.inspect} to PR ##{pr.fetch(:number)}: #{e.message}")
+      end
+
+      @configuration.logger.info("[PatchCaptain] Opened PR via GitHub API: #{pr.fetch(:url)}")
     end
 
     def provider_client
@@ -230,6 +237,15 @@ module PatchCaptain
       "unknown-release"
     rescue
       "unknown-release"
+    end
+
+    def resolved_pr_labels(applied_changes:)
+      labels = Array(@configuration.pull_request_labels).map(&:to_s).map(&:strip).reject(&:empty?)
+      labels << @configuration.label_no_file_changes.to_s.strip if applied_changes.to_i.zero?
+      if applied_changes.to_i >= @configuration.high_risk_file_change_threshold.to_i
+        labels << @configuration.label_high_risk.to_s.strip
+      end
+      labels.reject(&:empty?).uniq
     end
   end
 end

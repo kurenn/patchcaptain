@@ -15,6 +15,10 @@ PatchCaptain.configure do |config|
   config.github_token = ENV["GITHUB_TOKEN"]
   config.github_repository = ENV["GITHUB_REPOSITORY"] # e.g. "acme/my_rails_app"
   config.base_branch = "main"
+  config.pull_request_labels = %w[patchcaptain needs-review]
+  config.label_no_file_changes = "needs-manual-fix"
+  config.label_high_risk = "high-risk"
+  config.high_risk_file_change_threshold = 8
 
   # Scope of exception tracking.
   # Empty tracked_exceptions means "track all except ignored".
