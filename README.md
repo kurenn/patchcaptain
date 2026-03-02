@@ -1,14 +1,5 @@
 # PatchCaptain
 
-             |\\
-            /| \\
-           /\_|\_\_\\
-        \_\_\_(  ^  )\_\_\_
-       /   \\\_===\_/   \\
-      /\_\_\_\_\_/\_\_\_\\\_\_\_\_\_\\
-         /  /\_\_\_\\  \\
-        /\_\_/     \\\_\_\\
-
 `patchcaptain` captures Rails exceptions and can open a GitHub pull request with an AI-proposed fix.
 
 ## 1\. Install
