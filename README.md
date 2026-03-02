@@ -14,7 +14,7 @@ Then run:
 
 ```bash
 bundle install
-bin/rails generate patchcaptain:install
+bin/rails generate patch_captain:install
 ```
 
 ## 2\. Set API keys
@@ -32,7 +32,7 @@ Use either `CODEX_API_KEY` or `ANTHROPIC_API_KEY` based on your provider.
 
 ## 3\. Configure initializer
 
-Edit `config/initializers/patchcaptain.rb`:
+Edit `config/initializers/patch_captain.rb`:
 
 ```ruby
 PatchCaptain.configure do |config|

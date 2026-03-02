@@ -6,7 +6,7 @@ module PatchCaptain
       source_root File.expand_path("templates", __dir__)
 
       def copy_initializer
-        template "patchcaptain.rb", "config/initializers/patchcaptain.rb"
+        template "patch_captain.rb", "config/initializers/patch_captain.rb"
       end
     end
   end
