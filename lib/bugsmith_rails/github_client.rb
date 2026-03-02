@@ -12,6 +12,30 @@ module BugsmithRails
       response.fetch(:html_url)
     end
 
+    def find_open_pull_request_by_markers(release_sha:, fingerprint:)
+      page = 1
+      loop do
+        pulls = @client.pull_requests(@repository, state: "open", per_page: 100, page: page)
+        break if pulls.empty?
+
+        matched = pulls.find do |pr|
+          body = pr[:body].to_s
+          body.include?("bugsmith_release_sha: #{release_sha}") &&
+            body.include?("bugsmith_fingerprint: #{fingerprint}")
+        end
+        return matched if matched
+
+        page += 1
+      end
+      nil
+    end
+
+    def pull_request_url(pull_request)
+      return pull_request[:html_url] if pull_request.is_a?(Hash)
+
+      nil
+    end
+
     def create_branch(base:, requested_branch:)
       branch = sanitize_branch_name(requested_branch)
       resolved_base = resolve_base_branch(base)

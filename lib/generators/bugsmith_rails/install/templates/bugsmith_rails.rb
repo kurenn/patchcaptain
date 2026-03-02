@@ -43,4 +43,9 @@ BugsmithRails.configure do |config|
   # config.include_backtrace_file_snippets = true
   # config.max_backtrace_files = 5
   # config.backtrace_context_radius = 20
+
+  # Optional deploy SHA override for dedupe keys.
+  # By default Bugsmith uses BUGSMITH_RELEASE_SHA, then GITHUB_SHA,
+  # then local `git rev-parse HEAD`.
+  # ENV["BUGSMITH_RELEASE_SHA"] ||= "abc123"
 end

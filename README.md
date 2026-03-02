@@ -70,6 +70,14 @@ When an exception is raised:
 5. Bugsmith writes those file changes directly to a GitHub branch via API and opens the PR.
 6. The PR also includes a full exception report.
 
+Duplicate PR protection:
+- Bugsmith computes a fingerprint using exception data + release SHA.
+- Release SHA is resolved from:
+  1. `BUGSMITH_RELEASE_SHA`
+  2. `GITHUB_SHA`
+  3. local `git rev-parse HEAD`
+- If an open PR already has the same fingerprint for the same release SHA, Bugsmith skips creating a new PR.
+
 ## 5. Optional: manual report
 
 ```ruby
