@@ -127,6 +127,71 @@ end
 -   `PATCHCAPTAIN_RELEASE_SHA` (optional deploy SHA override for dedupe)
 -   `GITHUB_SHA` (fallback release SHA source)
 
+### 3.2 Configuration Reference
+
+Core:
+-   `enabled`: Turns PatchCaptain on/off globally.
+-   `provider`: AI provider to use (`:codex` or `:anthropic`).
+
+Provider (Codex):
+-   `codex_api_key`: API token for Codex/OpenAI.
+-   `codex_api_base`: Base URL for the Codex-compatible API.
+-   `codex_model`: Model name used for fix generation.
+
+Provider (Anthropic):
+-   `anthropic_api_key`: API token for Anthropic.
+-   `anthropic_api_base`: Base URL for Anthropic-compatible API.
+-   `anthropic_model`: Model name used for fix generation.
+
+GitHub:
+-   `github_token`: Token used to create branches, commits, and PRs.
+-   `github_repository`: Target repository in `owner/repo` format.
+-   `base_branch`: Base branch for new fix PRs.
+-   `github_reports_path`: Path where exception reports are committed in PR branches.
+-   `create_pull_request`: If `false`, orchestration exits before AI/provider call.
+    Hint: keep this `true` in staging/production, but set `false` for prompt/debug experiments to avoid creating test PRs.
+
+Exception filtering:
+-   `tracked_exceptions`: Allow-list. Empty means “track all unless ignored.”
+-   `ignored_exceptions`: Deny-list checked before `tracked_exceptions`.
+-   `track_exceptions(*classes_or_names)`: Helper to append allow-list entries.
+-   `ignore_exceptions(*classes_or_names)`: Helper to append deny-list entries.
+
+Payload and redaction:
+-   `max_backtrace_lines`: Backtrace limit. `nil` keeps the full backtrace.
+-   `redacted_keys`: Hash keys that should be replaced with `[FILTERED]`.
+-   `redacted_patterns`: Regex patterns to scrub from string values.
+    Hint: add org-specific token formats here (for example internal API keys) to prevent accidental leakage in PR reports.
+
+Prompt context and skills:
+-   `skill_text`: Inline instructions/rules appended to prompt context.
+-   `skill_path`: File path to skill text loaded at runtime.
+    Hint: use `skill_path` for team rules (code style, architecture constraints, mandatory test expectations).
+-   `context_files`: Files/directories to include as prompt context.
+    Hint: start small with high-signal files (`README.md`, `db/schema.rb`, one service/controller path). Too many files can dilute output quality.
+-   `max_context_files`: Max number of files pulled from `context_files`.
+-   `max_context_file_bytes`: Max bytes read per context file.
+-   `max_prompt_context_chars`: Overall context cap appended to prompts.
+    Hint: increase gradually (for example `20_000` -> `35_000`) if fixes are too generic.
+-   `include_backtrace_file_snippets`: Include source snippets from app frames in backtrace.
+    Hint: keep enabled for most apps; disable only if prompts become too large or noisy.
+-   `max_backtrace_files`: Max number of backtrace files to sample.
+    Hint: `3-8` is usually a good range. Higher values can add noise.
+-   `backtrace_context_radius`: Number of lines around each backtrace line.
+    Hint: `15-30` lines is usually enough context; very large radii increase token usage quickly.
+
+Runtime:
+-   `async`: Uses ActiveJob (`perform_later`) when available; otherwise runs inline.
+    Hint: use `async = false` while debugging from Rails console so logs/results are immediate.
+-   `commit_author_name`: Commit author name for GitHub file updates.
+-   `commit_author_email`: Commit author email for GitHub file updates.
+-   `logger`: Logger object used for diagnostic output.
+
+Compatibility (legacy no-op/fixed behavior):
+-   `flow_mode`: Always normalized to `:github_api`.
+-   `repository_path`: Used for context/fingerprint path normalization.
+-   `require_clean_worktree`: Kept for compatibility; no effect in GitHub API flow.
+
 ## 4\. How it works
 
 When an exception is raised:
