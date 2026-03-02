@@ -26,7 +26,6 @@ BugsmithRails.configure do |config|
 
   # Safety and behavior.
   config.async = true
-  config.require_clean_worktree = true
-  config.max_backtrace_lines = 80
-  config.repository_path = Rails.root.to_s
+  config.max_backtrace_lines = nil # nil means full backtrace
+  config.github_reports_path = ".bugsmith/reports"
 end

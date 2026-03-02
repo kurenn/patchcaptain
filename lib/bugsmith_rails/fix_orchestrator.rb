@@ -13,49 +13,45 @@ module BugsmithRails
         user_prompt: prompt.to_user_prompt
       )
       plan = AIResponseParser.new(raw_response).parse
-
-      git = GitRepository.new(
-        path: @configuration.repository_path,
-        base_branch: @configuration.base_branch,
-        logger: @configuration.logger,
-        require_clean_worktree: @configuration.require_clean_worktree
-      )
-
-      branch = git.prepare_branch(plan[:branch_name])
-      apply_diff_or_report(git, plan[:diff], raw_response)
-      git.stage_all
-
-      committed = git.commit(
-        message: plan[:commit_message],
-        author_name: @configuration.commit_author_name,
-        author_email: @configuration.commit_author_email
-      )
-      return unless committed
-
-      git.push(branch)
-      return unless @configuration.create_pull_request
-
-      pr_url = github_client.create_pull_request(
-        title: plan[:title],
-        body: plan[:body],
-        head: branch,
-        base: @configuration.base_branch
-      )
-      @configuration.logger.info("[BugsmithRails] Opened PR: #{pr_url}")
+      run_github_api_flow(plan, raw_response)
     rescue => e
       @configuration.logger.error("[BugsmithRails] orchestration failed: #{e.class}: #{e.message}")
     end
 
     private
 
-    def apply_diff_or_report(git, diff, raw_response)
-      if diff.present?
-        git.apply_diff(diff)
-      else
-        git.write_report(payload: @payload, raw_response: raw_response)
+    def run_github_api_flow(plan, raw_response)
+      return unless @configuration.create_pull_request
+
+      branch = github_client.create_branch(
+        base: @configuration.base_branch,
+        requested_branch: plan[:branch_name]
+      )
+      report_path, report_content = remote_report_file(raw_response, plan[:diff])
+      github_client.upsert_file(
+        branch: branch,
+        path: report_path,
+        content: report_content,
+        commit_message: plan[:commit_message]
+      )
+
+      pr_body = +"#{plan[:body]}\n\n"
+      pr_body << "### Bugsmith Exception Summary\n"
+      pr_body << "- Exception: `#{@payload.dig(:exception, :class)}`\n"
+      pr_body << "- Message: `#{@payload.dig(:exception, :message).to_s.gsub('`', "'")}`\n"
+      pr_body << "- Report file: `#{report_path}`\n"
+      pr_body << "- Proposed diff present: #{plan[:diff].present? ? 'yes' : 'no'}\n"
+      if plan[:diff].present?
+        pr_body << "\n```diff\n#{plan[:diff][0, 6000]}\n```\n"
       end
-    rescue
-      git.write_report(payload: @payload, raw_response: raw_response)
+
+      pr_url = github_client.create_pull_request(
+        title: plan[:title],
+        body: pr_body,
+        head: branch,
+        base: @configuration.base_branch
+      )
+      @configuration.logger.info("[BugsmithRails] Opened PR via GitHub API: #{pr_url}")
     end
 
     def provider_client
@@ -96,6 +92,35 @@ module BugsmithRails
       when :anthropic, :nantropic
         raise BugsmithRails::Error, "anthropic_api_key is missing" if @configuration.anthropic_api_key.blank?
       end
+    end
+
+    def remote_report_file(raw_response, diff)
+      timestamp = Time.now.utc.strftime("%Y%m%d%H%M%S")
+      path = File.join(@configuration.github_reports_path, "#{timestamp}.md")
+      content = <<~REPORT
+        # Bugsmith Exception Report
+
+        ## Metadata
+        - generated_at: #{Time.now.utc.iso8601}
+        - flow_mode: #{@configuration.flow_mode}
+        - provider: #{@configuration.provider}
+
+        ## Exception Payload
+        ```json
+        #{JSON.pretty_generate(@payload)}
+        ```
+
+        ## AI Raw Response
+        ```
+        #{raw_response}
+        ```
+
+        ## Proposed Diff
+        ```diff
+        #{diff.to_s}
+        ```
+      REPORT
+      [path, content]
     end
   end
 end

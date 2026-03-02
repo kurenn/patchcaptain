@@ -39,7 +39,7 @@ module BugsmithRails
       {
         class: @exception.class.name,
         message: @exception.message.to_s,
-        backtrace: Array(@exception.backtrace).first(@configuration.max_backtrace_lines),
+        backtrace: apply_backtrace_limit(Array(@exception.backtrace), @configuration.max_backtrace_lines),
         cause: cause_payload
       }.compact
     end
@@ -50,8 +50,14 @@ module BugsmithRails
       {
         class: @exception.cause.class.name,
         message: @exception.cause.message.to_s,
-        backtrace: Array(@exception.cause.backtrace).first(20)
+        backtrace: apply_backtrace_limit(Array(@exception.cause.backtrace), 20)
       }
+    end
+
+    def apply_backtrace_limit(backtrace, limit)
+      return backtrace if limit.nil?
+
+      backtrace.first(limit)
     end
 
     def request_payload

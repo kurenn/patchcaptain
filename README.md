@@ -48,6 +48,7 @@ BugsmithRails.configure do |config|
   # Track all exceptions except ignored ones
   config.tracked_exceptions = []
   config.ignored_exceptions = ["ActionController::RoutingError", "ActiveRecord::RecordNotFound"]
+  config.max_backtrace_lines = nil # full backtrace
 end
 ```
 
@@ -57,8 +58,8 @@ When an exception is raised:
 1. Bugsmith captures error details and backtrace.
 2. Sensitive data is redacted.
 3. AI generates a patch proposal.
-4. A branch/commit is created.
-5. A GitHub PR is opened (if enabled).
+4. Bugsmith creates branch + commit + PR directly in GitHub (no local git).
+5. The PR includes a full exception report and proposed diff.
 
 ## 5. Optional: manual report
 
@@ -74,4 +75,3 @@ end
 
 - Review AI-generated PRs before merging.
 - Keep keys in secrets manager or Rails encrypted credentials.
-- By default, Bugsmith refuses to run if git working tree is dirty.

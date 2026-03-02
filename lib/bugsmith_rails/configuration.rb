@@ -11,9 +11,8 @@ module BugsmithRails
                   :github_token,
                   :github_repository,
                   :base_branch,
-                  :repository_path,
+                  :github_reports_path,
                   :create_pull_request,
-                  :require_clean_worktree,
                   :async,
                   :tracked_exceptions,
                   :ignored_exceptions,
@@ -36,9 +35,8 @@ module BugsmithRails
       @github_token = ENV["GITHUB_TOKEN"]
       @github_repository = ENV["GITHUB_REPOSITORY"]
       @base_branch = ENV.fetch("BUGSMITH_BASE_BRANCH", "main")
-      @repository_path = defined?(Rails) ? Rails.root.to_s : Dir.pwd
+      @github_reports_path = ENV.fetch("BUGSMITH_REPORTS_PATH", ".bugsmith/reports")
       @create_pull_request = true
-      @require_clean_worktree = true
       @async = true
       @tracked_exceptions = []
       @ignored_exceptions = []
@@ -57,7 +55,7 @@ module BugsmithRails
         /ghp_[A-Za-z0-9]{20,}/,
         /sk-[A-Za-z0-9]{20,}/
       ]
-      @max_backtrace_lines = 80
+      @max_backtrace_lines = nil
       @commit_author_name = "Bugsmith Rails"
       @commit_author_email = "bugsmith-rails@users.noreply.github.com"
       @logger = default_logger
@@ -100,6 +98,28 @@ module BugsmithRails
     def ignore_exceptions(*exceptions)
       @ignored_exceptions |= normalize_exception_list(exceptions)
     end
+
+    # Compatibility shim: flow mode is fixed to :github_api.
+    def flow_mode
+      :github_api
+    end
+
+    def flow_mode=(_value)
+      :github_api
+    end
+
+    # Compatibility shims; local git mode was removed.
+    def repository_path
+      defined?(Rails) ? Rails.root.to_s : Dir.pwd
+    end
+
+    def repository_path=(_value); end
+
+    def require_clean_worktree
+      false
+    end
+
+    def require_clean_worktree=(_value); end
 
     private
 
