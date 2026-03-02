@@ -1,14 +1,14 @@
-require_relative "lib/bugsmith_rails/version"
+require_relative "lib/patchcaptain/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "bugsmith_rails"
-  spec.version = BugsmithRails::VERSION
+  spec.name = "patchcaptain"
+  spec.version = PatchCaptain::VERSION
   spec.authors = ["Abraham Kuri"]
   spec.email = ["abraham@example.com"]
 
   spec.summary = "Rails-first exception to AI fix PR pipeline"
   spec.description = "Capture Rails exceptions, build trace payloads, ask AI for a patch, and open a GitHub pull request."
-  spec.homepage = "https://example.com/bugsmith_rails"
+  spec.homepage = "https://example.com/patchcaptain"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
 

@@ -19,8 +19,8 @@ class ExceptionFingerprintTest < Minitest::Test
       request: { method: "GET", path: "/users/789" }
     }
 
-    fingerprint_a = BugsmithRails::ExceptionFingerprint.new(payload_a, release_sha: "abc123").value
-    fingerprint_b = BugsmithRails::ExceptionFingerprint.new(payload_b, release_sha: "abc123").value
+    fingerprint_a = PatchCaptain::ExceptionFingerprint.new(payload_a, release_sha: "abc123").value
+    fingerprint_b = PatchCaptain::ExceptionFingerprint.new(payload_b, release_sha: "abc123").value
 
     refute_equal "", fingerprint_a
     refute_equal "", fingerprint_b
@@ -36,8 +36,8 @@ class ExceptionFingerprintTest < Minitest::Test
       },
       request: { method: "POST", path: "/payments" }
     }
-    f1 = BugsmithRails::ExceptionFingerprint.new(payload, release_sha: "sha-one").value
-    f2 = BugsmithRails::ExceptionFingerprint.new(payload, release_sha: "sha-two").value
+    f1 = PatchCaptain::ExceptionFingerprint.new(payload, release_sha: "sha-one").value
+    f2 = PatchCaptain::ExceptionFingerprint.new(payload, release_sha: "sha-two").value
     refute_equal f1, f2
   end
 end

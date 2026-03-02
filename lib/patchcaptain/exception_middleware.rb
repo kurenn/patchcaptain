@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class ExceptionMiddleware
     def initialize(app)
       @app = app

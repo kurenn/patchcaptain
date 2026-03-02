@@ -1,6 +1,6 @@
-module BugsmithRails
+module PatchCaptain
   class ContextPackBuilder
-    def initialize(payload, configuration: BugsmithRails.configuration)
+    def initialize(payload, configuration: PatchCaptain.configuration)
       @payload = payload
       @configuration = configuration
       @project_root = Pathname(@configuration.repository_path.to_s)

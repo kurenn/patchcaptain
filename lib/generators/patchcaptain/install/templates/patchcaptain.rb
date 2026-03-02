@@ -1,4 +1,4 @@
-BugsmithRails.configure do |config|
+PatchCaptain.configure do |config|
   # AI provider:
   #   :codex or :anthropic
   config.provider = :codex
@@ -27,10 +27,10 @@ BugsmithRails.configure do |config|
   # Safety and behavior.
   config.async = true
   config.max_backtrace_lines = nil # nil means full backtrace
-  config.github_reports_path = ".bugsmith/reports"
+  config.github_reports_path = ".patchcaptain/reports"
 
   # Optional "skill" and context to improve AI fixes.
-  # config.skill_path = Rails.root.join(".bugsmith/skills/rails_fix.md").to_s
+  # config.skill_path = Rails.root.join(".patchcaptain/skills/rails_fix.md").to_s
   # config.skill_text = "Team coding rules..."
   # Default context_files includes:
   # README.md, db/schema.rb, CLAUDE.md, AGENTS.md,
@@ -45,7 +45,7 @@ BugsmithRails.configure do |config|
   # config.backtrace_context_radius = 20
 
   # Optional deploy SHA override for dedupe keys.
-  # By default Bugsmith uses BUGSMITH_RELEASE_SHA, then GITHUB_SHA,
+  # By default PatchCaptain uses PATCHCAPTAIN_RELEASE_SHA, then GITHUB_SHA,
   # then local `git rev-parse HEAD`.
-  # ENV["BUGSMITH_RELEASE_SHA"] ||= "abc123"
+  # ENV["PATCHCAPTAIN_RELEASE_SHA"] ||= "abc123"
 end

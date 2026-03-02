@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   module Provider
     class BaseClient
       attr_reader :api_key, :api_base, :model
@@ -24,7 +24,7 @@ module BugsmithRails
         end
 
         unless response.is_a?(Net::HTTPSuccess)
-          raise BugsmithRails::Error, "Provider request failed (#{response.code}): #{response.body}"
+          raise PatchCaptain::Error, "Provider request failed (#{response.code}): #{response.body}"
         end
 
         JSON.parse(response.body)

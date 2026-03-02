@@ -1,6 +1,6 @@
 require "octokit"
 
-module BugsmithRails
+module PatchCaptain
   class GithubClient
     def initialize(token:, repository:)
       @client = Octokit::Client.new(access_token: token)
@@ -20,8 +20,8 @@ module BugsmithRails
 
         matched = pulls.find do |pr|
           body = pr[:body].to_s
-          body.include?("bugsmith_release_sha: #{release_sha}") &&
-            body.include?("bugsmith_fingerprint: #{fingerprint}")
+          body.include?("patchcaptain_release_sha: #{release_sha}") &&
+            body.include?("patchcaptain_fingerprint: #{fingerprint}")
         end
         return matched if matched
 
@@ -52,7 +52,7 @@ module BugsmithRails
         end
       end
 
-      raise BugsmithRails::Error, "Could not create a unique GitHub branch for Bugsmith PR"
+      raise PatchCaptain::Error, "Could not create a unique GitHub branch for PatchCaptain PR"
     end
 
     def upsert_file(branch:, path:, content:, commit_message:)
@@ -78,24 +78,24 @@ module BugsmithRails
       repo = begin
         @client.repository(@repository)
       rescue Octokit::Unauthorized, Octokit::Forbidden
-        raise BugsmithRails::Error, "GitHub token does not have access to #{@repository.inspect}"
+        raise PatchCaptain::Error, "GitHub token does not have access to #{@repository.inspect}"
       rescue Octokit::NotFound => e
-        raise BugsmithRails::Error, "Repository #{@repository.inspect} not found or token has no access (#{e.message})"
+        raise PatchCaptain::Error, "Repository #{@repository.inspect} not found or token has no access (#{e.message})"
       end
 
       default_branch = repo.default_branch.to_s
       return default_branch if default_branch.present?
 
-      raise BugsmithRails::Error, "Could not resolve a base branch for #{@repository.inspect}"
+      raise PatchCaptain::Error, "Could not resolve a base branch for #{@repository.inspect}"
     rescue Octokit::Unauthorized, Octokit::Forbidden
-      raise BugsmithRails::Error, "GitHub token does not have access to #{@repository.inspect}"
+      raise PatchCaptain::Error, "GitHub token does not have access to #{@repository.inspect}"
     end
 
     def sanitize_branch_name(name)
       raw = name.to_s.downcase.gsub(/[^a-z0-9\/_-]/, "-").gsub(%r{/+}, "/").gsub(/-{2,}/, "-")
       cleaned = raw.gsub(/\A[-\/]+|[-\/]+\z/, "")
-      candidate = cleaned.presence || "bugsmith/exception-fix-#{SecureRandom.hex(4)}"
-      candidate.start_with?("bugsmith/") ? candidate : "bugsmith/#{candidate}"
+      candidate = cleaned.presence || "patchcaptain/exception-fix-#{SecureRandom.hex(4)}"
+      candidate.start_with?("patchcaptain/") ? candidate : "patchcaptain/#{candidate}"
     end
 
     def branch_exists_error?(error)

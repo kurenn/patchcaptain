@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class PromptBuilder
     def initialize(payload, context_pack: "")
       @payload = payload

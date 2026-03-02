@@ -4,8 +4,8 @@ class ExceptionFilterTest < Minitest::Test
   class CustomError < StandardError; end
 
   def setup
-    @config = BugsmithRails::Configuration.new
-    @filter = BugsmithRails::ExceptionFilter.new(configuration: @config)
+    @config = PatchCaptain::Configuration.new
+    @filter = PatchCaptain::ExceptionFilter.new(configuration: @config)
   end
 
   def test_tracks_all_when_no_allowlist

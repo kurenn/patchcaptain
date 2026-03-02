@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class ExceptionFingerprint
     def initialize(payload, release_sha:, repository_path: nil)
       @payload = payload

@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class ReporterJob
     if defined?(ActiveJob::Base)
       class Async < ActiveJob::Base

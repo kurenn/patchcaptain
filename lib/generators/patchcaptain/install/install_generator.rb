@@ -1,12 +1,12 @@
 require "rails/generators"
 
-module BugsmithRails
+module PatchCaptain
   module Generators
     class InstallGenerator < Rails::Generators::Base
       source_root File.expand_path("templates", __dir__)
 
       def copy_initializer
-        template "bugsmith_rails.rb", "config/initializers/bugsmith_rails.rb"
+        template "patchcaptain.rb", "config/initializers/patchcaptain.rb"
       end
     end
   end

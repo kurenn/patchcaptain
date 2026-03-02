@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class PayloadBuilder
     SAFE_HEADERS = %w[
       HTTP_USER_AGENT
@@ -11,7 +11,7 @@ module BugsmithRails
       PATH_INFO
     ].freeze
 
-    def initialize(exception, request: nil, context: {}, configuration: BugsmithRails.configuration)
+    def initialize(exception, request: nil, context: {}, configuration: PatchCaptain.configuration)
       @exception = exception
       @request = request
       @context = context || {}

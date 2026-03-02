@@ -1,6 +1,6 @@
-module BugsmithRails
+module PatchCaptain
   class FixOrchestrator
-    def initialize(payload, configuration: BugsmithRails.configuration)
+    def initialize(payload, configuration: PatchCaptain.configuration)
       @payload = payload
       @configuration = configuration
     end
@@ -8,7 +8,7 @@ module BugsmithRails
     def call
       validate_setup!
       unless @configuration.create_pull_request
-        @configuration.logger.info("[BugsmithRails] create_pull_request=false, skipping provider call.")
+        @configuration.logger.info("[PatchCaptain] create_pull_request=false, skipping provider call.")
         return
       end
 
@@ -24,7 +24,7 @@ module BugsmithRails
       )
       if existing_pr
         url = github_client.pull_request_url(existing_pr)
-        @configuration.logger.info("[BugsmithRails] Skipping duplicate PR before provider call for release=#{release_sha}, fingerprint=#{fingerprint}. Existing PR: #{url}")
+        @configuration.logger.info("[PatchCaptain] Skipping duplicate PR before provider call for release=#{release_sha}, fingerprint=#{fingerprint}. Existing PR: #{url}")
         return
       end
 
@@ -37,7 +37,7 @@ module BugsmithRails
       plan = AIResponseParser.new(raw_response).parse
       run_github_api_flow(plan, raw_response, release_sha: release_sha, fingerprint: fingerprint)
     rescue => e
-      @configuration.logger.error("[BugsmithRails] orchestration failed: #{e.class}: #{e.message}")
+      @configuration.logger.error("[PatchCaptain] orchestration failed: #{e.class}: #{e.message}")
     end
 
     private
@@ -65,7 +65,7 @@ module BugsmithRails
       )
 
       pr_body = +"#{plan[:body]}\n\n"
-      pr_body << "### Bugsmith Exception Summary\n"
+      pr_body << "### PatchCaptain Exception Summary\n"
       pr_body << "- Exception: `#{@payload.dig(:exception, :class)}`\n"
       pr_body << "- Message: `#{@payload.dig(:exception, :message).to_s.gsub('`', "'")}`\n"
       pr_body << "- Report file: `#{report_path}`\n"
@@ -76,8 +76,8 @@ module BugsmithRails
       if plan[:diff].present?
         pr_body << "\n```diff\n#{plan[:diff][0, 6000]}\n```\n"
       end
-      pr_body << "\n<!-- bugsmith_release_sha: #{release_sha} -->\n"
-      pr_body << "<!-- bugsmith_fingerprint: #{fingerprint} -->\n"
+      pr_body << "\n<!-- patchcaptain_release_sha: #{release_sha} -->\n"
+      pr_body << "<!-- patchcaptain_fingerprint: #{fingerprint} -->\n"
 
       pr_url = github_client.create_pull_request(
         title: plan[:title],
@@ -85,7 +85,7 @@ module BugsmithRails
         head: branch,
         base: base_branch
       )
-      @configuration.logger.info("[BugsmithRails] Opened PR via GitHub API: #{pr_url}")
+      @configuration.logger.info("[PatchCaptain] Opened PR via GitHub API: #{pr_url}")
     end
 
     def provider_client
@@ -103,7 +103,7 @@ module BugsmithRails
           model: @configuration.anthropic_model
         )
       else
-        raise BugsmithRails::Error, "Unsupported provider: #{@configuration.provider}"
+        raise PatchCaptain::Error, "Unsupported provider: #{@configuration.provider}"
       end
     end
 
@@ -116,15 +116,15 @@ module BugsmithRails
 
     def validate_setup!
       if @configuration.create_pull_request
-        raise BugsmithRails::Error, "github_token is missing" if @configuration.github_token.blank?
-        raise BugsmithRails::Error, "github_repository is missing" if @configuration.github_repository.blank?
+        raise PatchCaptain::Error, "github_token is missing" if @configuration.github_token.blank?
+        raise PatchCaptain::Error, "github_repository is missing" if @configuration.github_repository.blank?
       end
 
       case @configuration.provider
       when :codex
-        raise BugsmithRails::Error, "codex_api_key is missing" if @configuration.codex_api_key.blank?
+        raise PatchCaptain::Error, "codex_api_key is missing" if @configuration.codex_api_key.blank?
       when :anthropic, :nantropic
-        raise BugsmithRails::Error, "anthropic_api_key is missing" if @configuration.anthropic_api_key.blank?
+        raise PatchCaptain::Error, "anthropic_api_key is missing" if @configuration.anthropic_api_key.blank?
       end
     end
 
@@ -136,7 +136,7 @@ module BugsmithRails
       end.join("\n")
       file_change_summary = "- none" if file_change_summary.empty?
       content = <<~REPORT
-        # Bugsmith Exception Report
+        # PatchCaptain Exception Report
 
         ## Metadata
         - generated_at: #{Time.now.utc.iso8601}
@@ -221,7 +221,7 @@ module BugsmithRails
     end
 
     def resolved_release_sha
-      env_sha = ENV["BUGSMITH_RELEASE_SHA"].presence || ENV["GITHUB_SHA"].presence
+      env_sha = ENV["PATCHCAPTAIN_RELEASE_SHA"].presence || ENV["GITHUB_SHA"].presence
       return env_sha.to_s if env_sha
 
       stdout, _stderr, status = Open3.capture3("git", "rev-parse", "HEAD", chdir: @configuration.repository_path.to_s)

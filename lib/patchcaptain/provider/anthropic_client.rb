@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   module Provider
     class AnthropicClient < BaseClient
       ANTHROPIC_VERSION = "2023-06-01".freeze

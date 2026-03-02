@@ -1,8 +1,8 @@
-module BugsmithRails
+module PatchCaptain
   class Redactor
     FILTERED_VALUE = "[FILTERED]".freeze
 
-    def initialize(configuration: BugsmithRails.configuration)
+    def initialize(configuration: PatchCaptain.configuration)
       @configuration = configuration
     end
 

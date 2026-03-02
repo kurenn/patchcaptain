@@ -1,6 +1,6 @@
-module BugsmithRails
+module PatchCaptain
   class Reporter
-    def initialize(configuration: BugsmithRails.configuration)
+    def initialize(configuration: PatchCaptain.configuration)
       @configuration = configuration
       @filter = ExceptionFilter.new(configuration: configuration)
     end
@@ -22,7 +22,7 @@ module BugsmithRails
         FixOrchestrator.new(payload, configuration: @configuration).call
       end
     rescue => e
-      @configuration.logger.error("[BugsmithRails] report failed: #{e.class}: #{e.message}")
+      @configuration.logger.error("[PatchCaptain] report failed: #{e.class}: #{e.message}")
     end
   end
 end

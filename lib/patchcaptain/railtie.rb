@@ -1,12 +1,12 @@
-module BugsmithRails
+module PatchCaptain
   class Railtie < Rails::Railtie
-    initializer "bugsmith_rails.insert_middleware" do |app|
-      next unless BugsmithRails.configuration.enabled
+    initializer "patchcaptain.insert_middleware" do |app|
+      next unless PatchCaptain.configuration.enabled
 
       app.middleware.use(ExceptionMiddleware)
     end
 
-    initializer "bugsmith_rails.subscribe_active_job" do
+    initializer "patchcaptain.subscribe_active_job" do
       next unless defined?(ActiveSupport::Notifications)
 
       ActiveSupport::Notifications.subscribe("perform.active_job") do |*args|

@@ -1,10 +1,10 @@
-module BugsmithRails
+module PatchCaptain
   class AIResponseParser
     DEFAULT_RESULT = {
-      title: "chore: add bugsmith exception diagnostics",
-      body: "Automated Bugsmith report. Manual review required.",
-      branch_name: "bugsmith/exception-report",
-      commit_message: "chore: add bugsmith exception diagnostics",
+      title: "chore: add patchcaptain exception diagnostics",
+      body: "Automated PatchCaptain report. Manual review required.",
+      branch_name: "patchcaptain/exception-report",
+      commit_message: "chore: add patchcaptain exception diagnostics",
       diff: nil,
       file_changes: []
     }.freeze
@@ -48,7 +48,7 @@ module BugsmithRails
 
     def fallback_body
       <<~TEXT.strip
-        Bugsmith could not parse structured AI output, so this PR only includes diagnostics.
+        PatchCaptain could not parse structured AI output, so this PR only includes diagnostics.
 
         Raw AI output:
         #{@raw_response[0, 2000]}

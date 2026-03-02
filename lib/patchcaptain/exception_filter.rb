@@ -1,6 +1,6 @@
-module BugsmithRails
+module PatchCaptain
   class ExceptionFilter
-    def initialize(configuration: BugsmithRails.configuration)
+    def initialize(configuration: PatchCaptain.configuration)
       @configuration = configuration
     end
 

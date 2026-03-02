@@ -2,8 +2,8 @@ require_relative "test_helper"
 
 class RedactorTest < Minitest::Test
   def setup
-    @config = BugsmithRails::Configuration.new
-    @redactor = BugsmithRails::Redactor.new(configuration: @config)
+    @config = PatchCaptain::Configuration.new
+    @redactor = PatchCaptain::Redactor.new(configuration: @config)
   end
 
   def test_redacts_sensitive_keys

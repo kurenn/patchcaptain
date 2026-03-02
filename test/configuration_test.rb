@@ -2,7 +2,7 @@ require_relative "test_helper"
 
 class ConfigurationTest < Minitest::Test
   def test_flow_mode_normalization
-    config = BugsmithRails::Configuration.new
+    config = PatchCaptain::Configuration.new
     config.flow_mode = :remote
     assert_equal :github_api, config.flow_mode
 
@@ -11,7 +11,7 @@ class ConfigurationTest < Minitest::Test
   end
 
   def test_default_context_files
-    config = BugsmithRails::Configuration.new
+    config = PatchCaptain::Configuration.new
     assert_includes config.context_files, "README.md"
     assert_includes config.context_files, "AGENTS.md"
     assert_includes config.context_files, ".agent/workflows"

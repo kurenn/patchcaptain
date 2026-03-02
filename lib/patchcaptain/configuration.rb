@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   class Configuration
     attr_accessor :enabled,
                   :provider,
@@ -43,18 +43,18 @@ module BugsmithRails
       @anthropic_model = ENV["ANTHROPIC_MODEL"] || ENV["NANTROPIC_MODEL"] || "claude-sonnet-4-5"
       @github_token = ENV["GITHUB_TOKEN"]
       @github_repository = ENV["GITHUB_REPOSITORY"]
-      @base_branch = ENV.fetch("BUGSMITH_BASE_BRANCH", "main")
-      @github_reports_path = ENV.fetch("BUGSMITH_REPORTS_PATH", ".bugsmith/reports")
+      @base_branch = ENV.fetch("PATCHCAPTAIN_BASE_BRANCH", "main")
+      @github_reports_path = ENV.fetch("PATCHCAPTAIN_REPORTS_PATH", ".patchcaptain/reports")
       @repository_path = defined?(Rails) ? Rails.root.to_s : Dir.pwd
       @skill_text = ""
-      @skill_path = ENV["BUGSMITH_SKILL_PATH"]
+      @skill_path = ENV["PATCHCAPTAIN_SKILL_PATH"]
       @context_files = default_context_files
-      @max_context_files = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILES", "30").to_i
-      @max_context_file_bytes = ENV.fetch("BUGSMITH_MAX_CONTEXT_FILE_BYTES", "50000").to_i
-      @max_prompt_context_chars = ENV.fetch("BUGSMITH_MAX_PROMPT_CONTEXT_CHARS", "20000").to_i
+      @max_context_files = ENV.fetch("PATCHCAPTAIN_MAX_CONTEXT_FILES", "30").to_i
+      @max_context_file_bytes = ENV.fetch("PATCHCAPTAIN_MAX_CONTEXT_FILE_BYTES", "50000").to_i
+      @max_prompt_context_chars = ENV.fetch("PATCHCAPTAIN_MAX_PROMPT_CONTEXT_CHARS", "20000").to_i
       @include_backtrace_file_snippets = true
-      @max_backtrace_files = ENV.fetch("BUGSMITH_MAX_BACKTRACE_FILES", "5").to_i
-      @backtrace_context_radius = ENV.fetch("BUGSMITH_BACKTRACE_CONTEXT_RADIUS", "20").to_i
+      @max_backtrace_files = ENV.fetch("PATCHCAPTAIN_MAX_BACKTRACE_FILES", "5").to_i
+      @backtrace_context_radius = ENV.fetch("PATCHCAPTAIN_BACKTRACE_CONTEXT_RADIUS", "20").to_i
       @create_pull_request = true
       @async = true
       @tracked_exceptions = []
@@ -75,8 +75,8 @@ module BugsmithRails
         /sk-[A-Za-z0-9]{20,}/
       ]
       @max_backtrace_lines = nil
-      @commit_author_name = "Bugsmith Rails"
-      @commit_author_email = "bugsmith-rails@users.noreply.github.com"
+      @commit_author_name = "PatchCaptain Rails"
+      @commit_author_email = "patchcaptain@users.noreply.github.com"
       @logger = default_logger
     end
 

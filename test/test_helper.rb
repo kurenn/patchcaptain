@@ -1,3 +1,3 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "minitest/autorun"
-require "bugsmith_rails"
+require "patchcaptain"

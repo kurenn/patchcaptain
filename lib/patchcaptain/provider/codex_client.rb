@@ -1,4 +1,4 @@
-module BugsmithRails
+module PatchCaptain
   module Provider
     class CodexClient < BaseClient
       def generate_fix(system_prompt:, user_prompt:)
