@@ -7,22 +7,10 @@ module BugsmithRails
 
     def call
       validate_setup!
-      context_pack = ContextPackBuilder.new(@payload, configuration: @configuration).build
-      prompt = PromptBuilder.new(@payload, context_pack: context_pack)
-      raw_response = provider_client.generate_fix(
-        system_prompt: prompt.to_system_prompt,
-        user_prompt: prompt.to_user_prompt
-      )
-      plan = AIResponseParser.new(raw_response).parse
-      run_github_api_flow(plan, raw_response)
-    rescue => e
-      @configuration.logger.error("[BugsmithRails] orchestration failed: #{e.class}: #{e.message}")
-    end
-
-    private
-
-    def run_github_api_flow(plan, raw_response)
-      return unless @configuration.create_pull_request
+      unless @configuration.create_pull_request
+        @configuration.logger.info("[BugsmithRails] create_pull_request=false, skipping provider call.")
+        return
+      end
 
       release_sha = resolved_release_sha
       fingerprint = ExceptionFingerprint.new(
@@ -30,17 +18,31 @@ module BugsmithRails
         release_sha: release_sha,
         repository_path: @configuration.repository_path
       ).value
-
       existing_pr = github_client.find_open_pull_request_by_markers(
         release_sha: release_sha,
         fingerprint: fingerprint
       )
       if existing_pr
         url = github_client.pull_request_url(existing_pr)
-        @configuration.logger.info("[BugsmithRails] Skipping duplicate PR for release=#{release_sha}, fingerprint=#{fingerprint}. Existing PR: #{url}")
+        @configuration.logger.info("[BugsmithRails] Skipping duplicate PR before provider call for release=#{release_sha}, fingerprint=#{fingerprint}. Existing PR: #{url}")
         return
       end
 
+      context_pack = ContextPackBuilder.new(@payload, configuration: @configuration).build
+      prompt = PromptBuilder.new(@payload, context_pack: context_pack)
+      raw_response = provider_client.generate_fix(
+        system_prompt: prompt.to_system_prompt,
+        user_prompt: prompt.to_user_prompt
+      )
+      plan = AIResponseParser.new(raw_response).parse
+      run_github_api_flow(plan, raw_response, release_sha: release_sha, fingerprint: fingerprint)
+    rescue => e
+      @configuration.logger.error("[BugsmithRails] orchestration failed: #{e.class}: #{e.message}")
+    end
+
+    private
+
+    def run_github_api_flow(plan, raw_response, release_sha:, fingerprint:)
       branch_info = github_client.create_branch(
         base: @configuration.base_branch,
         requested_branch: plan[:branch_name]
