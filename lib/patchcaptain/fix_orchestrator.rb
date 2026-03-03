@@ -49,7 +49,16 @@ module PatchCaptain
       )
       branch = branch_info.fetch(:branch)
       base_branch = branch_info.fetch(:base_branch)
-      applied_changes = apply_file_changes(branch, plan[:file_changes], plan[:commit_message])
+      change_result = apply_file_changes(branch, plan[:file_changes], plan[:commit_message])
+      applied_changes = change_result.fetch(:count)
+      changed_paths = change_result.fetch(:paths)
+      test_gate = evaluate_test_change_gate(changed_paths)
+
+      if test_gate[:failed] && @configuration.block_pr_on_missing_tests
+        @configuration.logger.warn("[PatchCaptain] Blocking PR because app code changed without test updates.")
+        return
+      end
+
       report_path, report_content = remote_report_file(
         raw_response,
         plan[:diff],
@@ -70,9 +79,16 @@ module PatchCaptain
       pr_body << "- Message: `#{@payload.dig(:exception, :message).to_s.gsub('`', "'")}`\n"
       pr_body << "- Report file: `#{report_path}`\n"
       pr_body << "- Applied file changes: #{applied_changes}\n"
+      pr_body << "- App files changed: #{test_gate[:app_files_changed]}\n"
+      pr_body << "- Test files changed: #{test_gate[:test_files_changed]}\n"
       pr_body << "- Proposed diff present: #{plan[:diff].present? ? 'yes' : 'no'}\n"
       pr_body << "- Release SHA: `#{release_sha}`\n"
       pr_body << "- Fingerprint: `#{fingerprint}`\n"
+      if test_gate[:failed]
+        pr_body << "- Test change gate: failed (app changes without spec/test changes)\n"
+      else
+        pr_body << "- Test change gate: passed\n"
+      end
       if plan[:diff].present?
         pr_body << "\n```diff\n#{plan[:diff][0, 6000]}\n```\n"
       end
@@ -85,7 +101,7 @@ module PatchCaptain
         head: branch,
         base: base_branch
       )
-      labels = resolved_pr_labels(applied_changes: applied_changes)
+      labels = resolved_pr_labels(applied_changes: applied_changes, test_gate: test_gate)
       begin
         github_client.add_labels_to_pull_request(number: pr.fetch(:number), labels: labels)
       rescue => e
@@ -175,10 +191,12 @@ module PatchCaptain
 
     def apply_file_changes(branch, file_changes, commit_message)
       valid_changes = sanitize_file_changes(file_changes)
+      changed_paths = []
       valid_changes.each do |change|
         path = change.fetch(:path)
         action = change.fetch(:action)
         message = "#{commit_message} (#{action} #{path})"
+        changed_paths << path
 
         case action
         when :delete
@@ -192,7 +210,10 @@ module PatchCaptain
           )
         end
       end
-      valid_changes.length
+      {
+        count: valid_changes.length,
+        paths: changed_paths
+      }
     end
 
     def sanitize_file_changes(file_changes)
@@ -239,13 +260,36 @@ module PatchCaptain
       "unknown-release"
     end
 
-    def resolved_pr_labels(applied_changes:)
+    def resolved_pr_labels(applied_changes:, test_gate:)
       labels = Array(@configuration.pull_request_labels).map(&:to_s).map(&:strip).reject(&:empty?)
       labels << @configuration.label_no_file_changes.to_s.strip if applied_changes.to_i.zero?
       if applied_changes.to_i >= @configuration.high_risk_file_change_threshold.to_i
         labels << @configuration.label_high_risk.to_s.strip
       end
+      labels << @configuration.label_needs_tests.to_s.strip if test_gate[:failed]
       labels.reject(&:empty?).uniq
+    end
+
+    def evaluate_test_change_gate(changed_paths)
+      app_paths = Array(@configuration.app_paths_for_test_enforcement).map(&:to_s)
+      test_paths = Array(@configuration.test_paths).map(&:to_s)
+
+      app_files_changed = changed_paths.count do |path|
+        app_paths.any? { |prefix| path.start_with?(prefix) }
+      end
+      test_files_changed = changed_paths.count do |path|
+        test_paths.any? { |prefix| path.start_with?(prefix) }
+      end
+
+      failed = @configuration.require_test_changes_for_app_changes &&
+               app_files_changed.positive? &&
+               test_files_changed.zero?
+
+      {
+        failed: failed,
+        app_files_changed: app_files_changed,
+        test_files_changed: test_files_changed
+      }
     end
   end
 end

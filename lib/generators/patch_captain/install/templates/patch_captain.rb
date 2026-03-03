@@ -18,7 +18,12 @@ PatchCaptain.configure do |config|
   config.pull_request_labels = %w[patchcaptain needs-review]
   config.label_no_file_changes = "needs-manual-fix"
   config.label_high_risk = "high-risk"
+  config.label_needs_tests = "needs-tests"
   config.high_risk_file_change_threshold = 8
+  config.require_test_changes_for_app_changes = true
+  config.block_pr_on_missing_tests = false
+  config.app_paths_for_test_enforcement = ["app/"]
+  config.test_paths = ["spec/", "test/"]
 
   # Scope of exception tracking.
   # Empty tracked_exceptions means "track all except ignored".

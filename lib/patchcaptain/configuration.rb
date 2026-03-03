@@ -15,7 +15,12 @@ module PatchCaptain
                   :pull_request_labels,
                   :label_no_file_changes,
                   :label_high_risk,
+                  :label_needs_tests,
                   :high_risk_file_change_threshold,
+                  :require_test_changes_for_app_changes,
+                  :block_pr_on_missing_tests,
+                  :app_paths_for_test_enforcement,
+                  :test_paths,
                   :skill_text,
                   :skill_path,
                   :context_files,
@@ -52,7 +57,12 @@ module PatchCaptain
       @pull_request_labels = %w[patchcaptain needs-review]
       @label_no_file_changes = "needs-manual-fix"
       @label_high_risk = "high-risk"
+      @label_needs_tests = "needs-tests"
       @high_risk_file_change_threshold = ENV.fetch("PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD", "8").to_i
+      @require_test_changes_for_app_changes = env_bool("PATCHCAPTAIN_REQUIRE_TEST_CHANGES_FOR_APP_CHANGES", true)
+      @block_pr_on_missing_tests = env_bool("PATCHCAPTAIN_BLOCK_PR_ON_MISSING_TESTS", false)
+      @app_paths_for_test_enforcement = ["app/"]
+      @test_paths = ["spec/", "test/"]
       @repository_path = defined?(Rails) ? Rails.root.to_s : Dir.pwd
       @skill_text = ""
       @skill_path = ENV["PATCHCAPTAIN_SKILL_PATH"]
@@ -177,6 +187,13 @@ module PatchCaptain
         ".github/copilot-instructions.md",
         ".github/instructions"
       ]
+    end
+
+    def env_bool(key, default)
+      raw = ENV[key]
+      return default if raw.nil?
+
+      %w[1 true yes on].include?(raw.to_s.strip.downcase)
     end
   end
 end

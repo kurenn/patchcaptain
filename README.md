@@ -57,7 +57,12 @@ PatchCaptain.configure do |config|
   config.pull_request_labels = %w[patchcaptain needs-review]
   config.label_no_file_changes = "needs-manual-fix"
   config.label_high_risk = "high-risk"
+  config.label_needs_tests = "needs-tests"
   config.high_risk_file_change_threshold = ENV.fetch("PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD", "8").to_i
+  config.require_test_changes_for_app_changes = true
+  config.block_pr_on_missing_tests = false
+  config.app_paths_for_test_enforcement = ["app/"]
+  config.test_paths = ["spec/", "test/"]
   config.create_pull_request = true
 
   # Exception filtering
@@ -124,6 +129,8 @@ end
 -   `PATCHCAPTAIN_REPORTS_PATH` (default: `.patchcaptain/reports`)
 -   `PATCHCAPTAIN_SKILL_PATH` (optional)
 -   `PATCHCAPTAIN_HIGH_RISK_FILE_CHANGE_THRESHOLD` (default: `8`)
+-   `PATCHCAPTAIN_REQUIRE_TEST_CHANGES_FOR_APP_CHANGES` (optional toggle, default true in initializer/config)
+-   `PATCHCAPTAIN_BLOCK_PR_ON_MISSING_TESTS` (optional toggle, default false)
 -   `PATCHCAPTAIN_MAX_CONTEXT_FILES` (default: `30`)
 -   `PATCHCAPTAIN_MAX_CONTEXT_FILE_BYTES` (default: `50000`)
 -   `PATCHCAPTAIN_MAX_PROMPT_CONTEXT_CHARS` (default: `20000`)
@@ -156,10 +163,16 @@ GitHub:
 -   `pull_request_labels`: Base labels always added to created PRs.
 -   `label_no_file_changes`: Extra label when AI produced no applicable file changes.
 -   `label_high_risk`: Extra label when the number of changed files passes risk threshold.
+-   `label_needs_tests`: Extra label when app code changed without any `spec/` or `test/` changes.
 -   `high_risk_file_change_threshold`: File-change count that triggers `label_high_risk`.
+-   `require_test_changes_for_app_changes`: Enforces a test-change gate when app code is modified.
+-   `block_pr_on_missing_tests`: If `true`, skips PR creation when gate fails; if `false`, opens PR with `needs-tests` label.
+-   `app_paths_for_test_enforcement`: Path prefixes considered “app code” (default: `["app/"]`).
+-   `test_paths`: Path prefixes considered test files (default: `["spec/", "test/"]`).
 -   `create_pull_request`: If `false`, orchestration exits before AI/provider call.
     Hint: keep this `true` in staging/production, but set `false` for prompt/debug experiments to avoid creating test PRs.
     Hint: if labels fail because they do not exist in your repo, PatchCaptain logs a warning and continues.
+    Hint: if you want strict reliability, set `block_pr_on_missing_tests = true`.
 
 Exception filtering:
 -   `tracked_exceptions`: Allow-list. Empty means “track all unless ignored.”
