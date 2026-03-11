@@ -43,16 +43,23 @@ module PatchCaptain
       return unless @configuration.include_backtrace_file_snippets
 
       files = extract_backtrace_file_targets
+      seen_files = Set.new
+
+      # First, include FULL contents of unique app files from the backtrace.
+      # This ensures the AI has the complete file when generating updates,
+      # preventing it from omitting existing code.
       files.first(@configuration.max_backtrace_files).each do |target|
         full_path = target[:path]
         next unless full_path.file?
+        next if seen_files.include?(full_path.to_s)
+
+        seen_files.add(full_path.to_s)
 
         text = safe_read_text(full_path)
         next if text.strip.empty?
 
-        snippet = line_window(text, target[:line], @configuration.backtrace_context_radius)
         relative = relative_path(full_path)
-        sections << section("Backtrace Snippet: #{relative}:#{target[:line]}", snippet)
+        sections << section("Full Source File (preserve all code when updating): #{relative}", text)
       end
     end
 

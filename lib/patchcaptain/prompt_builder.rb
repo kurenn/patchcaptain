@@ -30,8 +30,10 @@ module PatchCaptain
         - Preserve backwards compatibility.
         - Keep changes focused on fixing the reported exception.
         - Prefer minimal edits in existing files.
+        - CRITICAL: When action is "update", the "content" field must contain the COMPLETE original file with ONLY your targeted fix applied. You MUST preserve ALL existing code — every method, every route, every line that is not directly related to your fix. Do NOT omit, simplify, or rewrite code that already exists. If a file is provided in the project context, use it as your base and apply only the minimum change needed.
+        - CRITICAL: Do NOT replace or rewrite files. Only add or modify the specific lines needed to fix the exception. If a controller already has methods, keep them all. If a routes file has existing routes, keep them all.
         - file_changes must contain concrete edits when you are confident.
-        - If unsure, return an empty file_changes array and explain uncertainty in "body".
+        - If you do not have the full contents of a file you need to update, return an empty file_changes array and explain what manual change is needed in "body" instead of guessing the file contents.
         - Do not include markdown fences or prose outside JSON.
       PROMPT
     end
